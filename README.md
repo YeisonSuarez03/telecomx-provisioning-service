@@ -34,3 +34,21 @@ flowchart LR
     TOPIC --> CONSUMER
     REST --> DB
     CONSUMER --> DB
+```
+
+## API
+
+````http request
+### Crear una portabilidad
+POST  http://localhost:8080/provisioning HTTP/1.1
+content-type: application/json
+{
+	"userId": "123456789",
+	"serviceName": "Portability",
+	"status": "Requested",
+}
+
+### Consultar portabilidades
+GET http://localhost:8080/provisioning HTTP/1.1
+###
+````
