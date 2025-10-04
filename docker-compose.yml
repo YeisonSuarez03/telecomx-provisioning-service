@@ -1,30 +1,34 @@
+version: '3.9'
+
 services:
   # --- Zookeeper ---
   zookeeper:
-    image: bitnami/zookeeper:3.9.1
+    image: confluentinc/cp-zookeeper:7.3.2
     container_name: zookeeper
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOOKEEPER_CLIENT_PORT=2181
     ports:
       - "2181:2181"
 
   # --- Kafka ---
   kafka:
-    image: bitnami/kafka:3.6.1
+    image: confluentinc/cp-kafka:7.3.2
     container_name: kafka
-    ports:
-      - "9092:9092"
-      - "29092:29092"
-    environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
+    ports:
+      - "9092:9092"      # Para que otros contenedores lo vean como kafka:9092
+      - "29092:29092"    # Para conexiones desde host local
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
 
   # --- MongoDB ---
   mongo:
@@ -44,18 +48,18 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: provisioning-service
+    depends_on:
+      - kafka
+      - mongo
     ports:
       - "8080:8080"
     environment:
       - PORT=8080
       - MONGODB_URI=mongodb://mongo:27017/telecomx-provisioning
-      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_BROKERS=kafka:9092   # Usar kafka:9092 para contenedores
       - KAFKA_TOPIC=customers
       - KAFKA_GROUP_ID=telecomx-provisioning-consumer
       - KAFKA_CLIENT_ID=telecomx-provisioning-service
-    depends_on:
-      - kafka
-      - mongo
 
 volumes:
   mongo_data:

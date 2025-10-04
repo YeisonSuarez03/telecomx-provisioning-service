@@ -21,7 +21,7 @@ type CustomerPayload struct {
 	IsActive    bool   `json:"isActive"`
 }
 
-func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topic, group, client string) {
+func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topic, group, client string) error {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: brokers,
 		Topic:   topic,
@@ -38,7 +38,7 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 		msg, err := reader.ReadMessage(context.Background())
 		if err != nil {
 			log.Println("Kafka error:", err)
-			continue
+			return err
 		}
 
 		var event CustomerEvent
@@ -62,7 +62,7 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 			})
 			if err != nil {
 				log.Println("Error creating customer:", err)
-				return
+				return err
 			}
 		case "Customer.Updated":
 			status := "Active"
@@ -72,13 +72,13 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 			err := svc.UpdateStatus(context.Background(), payload.UserID, status)
 			if err != nil {
 				log.Println("Error updating customer status:", err)
-				return
+				return err
 			}
 		case "Customer.Deleted":
 			err := svc.Delete(context.Background(), payload.UserID)
 			if err != nil {
 				log.Println("Error deleting customer:", err)
-				return
+				return err
 			}
 		}
 	}

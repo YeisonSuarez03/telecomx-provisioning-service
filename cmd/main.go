@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
+	"time"
 
 	"telecomx-provisioning-service/internal/application/service"
 	"telecomx-provisioning-service/internal/config"
@@ -26,11 +27,31 @@ func main() {
 	repo := repository.NewMongoRepository(db)
 	svc := service.NewProvisioningService(repo)
 
-	listener.StartKafkaListener(svc, cfg.Brokers, cfg.Topic, cfg.Group, cfg.Client)
+	go func() {
+		for {
+			err := startKafkaWithRetry(svc, cfg)
+			if err != nil {
+				log.Println("Kafka listener failed, retrying in 5s:", err)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			break
+		}
+	}()
 
 	mux := http.NewServeMux()
 	rest.NewProvisioningHandler(svc).RegisterRoutes(mux)
 
 	fmt.Printf("REST server running on :%s\n", cfg.Port)
 	log.Fatal(http.ListenAndServe(":"+cfg.Port, mux))
+}
+
+func startKafkaWithRetry(svc *service.ProvisioningService, cfg config.Config) error {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recovered in Kafka listener:", r)
+		}
+	}()
+
+	return listener.StartKafkaListener(svc, cfg.Brokers, cfg.Topic, cfg.Group, cfg.Client)
 }
