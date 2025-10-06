@@ -96,6 +96,7 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 
 		switch event.Type {
 		case "Customer.Created":
+			log.Printf("[Kafka] Processing Customer.Created event for userID=%s", payload.UserID)
 			if payload.ServiceName == "" {
 				payload.ServiceName = "Internet"
 			}
@@ -105,25 +106,32 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 				Status:      "Active",
 			})
 			if err != nil {
-				log.Println("Error creating customer:", err)
+				log.Printf("[Kafka] FAILED Customer.Created for userID=%s: %v", payload.UserID, err)
 				return err
 			}
+			log.Printf("[Kafka] SUCCESS Customer.Created for userID=%s serviceName=%s", payload.UserID, payload.ServiceName)
 		case "Customer.Updated":
+			log.Printf("[Kafka] Processing Customer.Updated event for userID=%s isActive=%v", payload.UserID, payload.IsActive)
 			status := "Active"
 			if !payload.IsActive {
 				status = "Suspended"
 			}
 			err := svc.UpdateStatus(context.Background(), payload.UserID, status)
 			if err != nil {
-				log.Println("Error updating customer status:", err)
+				log.Printf("[Kafka] FAILED Customer.Updated for userID=%s status=%s: %v", payload.UserID, status, err)
 				return err
 			}
+			log.Printf("[Kafka] SUCCESS Customer.Updated for userID=%s status=%s", payload.UserID, status)
 		case "Customer.Deleted":
+			log.Printf("[Kafka] Processing Customer.Deleted event for userID=%s", payload.UserID)
 			err := svc.Delete(context.Background(), payload.UserID)
 			if err != nil {
-				log.Println("Error deleting customer:", err)
+				log.Printf("[Kafka] FAILED Customer.Deleted for userID=%s: %v", payload.UserID, err)
 				return err
 			}
+			log.Printf("[Kafka] SUCCESS Customer.Deleted for userID=%s", payload.UserID)
+		default:
+			log.Printf("[Kafka] UNKNOWN event type=%s for userID=%s", event.Type, payload.UserID)
 		}
 	}
 }
