@@ -3,8 +3,9 @@ package listener
 import (
 	"context"
 	"encoding/json"
-	"github.com/segmentio/kafka-go"
 	"log"
+
+	"github.com/segmentio/kafka-go"
 
 	"telecomx-provisioning-service/internal/application/service"
 	"telecomx-provisioning-service/internal/domain/model"
@@ -51,7 +52,7 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 		}
 
 		// Log parsed event type and a trimmed payload preview
-		log.Printf("[Kafka] Parsed event type=%s payload_len=%d", event.Type, len(event.Payload))
+		log.Printf("[Kafka] Parsed event type=%s payload_len=%d complete=%v", event.Type, len(event.Payload), event)
 
 		var payload CustomerPayload
 		_ = json.Unmarshal(event.Payload, &payload)
