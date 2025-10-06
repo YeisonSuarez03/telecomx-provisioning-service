@@ -122,6 +122,26 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 				return err
 			}
 			log.Printf("[Kafka] SUCCESS Customer.Updated for userID=%s status=%s", payload.UserID, status)
+		case "Customer.Suspended":
+			log.Printf("[Kafka] Processing Customer.Suspended event for userID=%s isActive=%v", payload.UserID, payload.IsActive)
+			status := "Suspended"
+			
+			err := svc.UpdateStatus(context.Background(), payload.UserID, status)
+			if err != nil {
+				log.Printf("[Kafka] FAILED Customer.Updated for userID=%s status=%s: %v", payload.UserID, status, err)
+				return err
+			}
+			log.Printf("[Kafka] SUCCESS Customer.Updated for userID=%s status=%s", payload.UserID, status)
+		case "Customer.Reactivated":
+			log.Printf("[Kafka] Processing Customer.Reactivated event for userID=%s isActive=%v", payload.UserID, payload.IsActive)
+			status := "Active"
+			
+			err := svc.UpdateStatus(context.Background(), payload.UserID, status)
+			if err != nil {
+				log.Printf("[Kafka] FAILED Customer.Updated for userID=%s status=%s: %v", payload.UserID, status, err)
+				return err
+			}
+			log.Printf("[Kafka] SUCCESS Customer.Updated for userID=%s status=%s", payload.UserID, status)
 		case "Customer.Deleted":
 			log.Printf("[Kafka] Processing Customer.Deleted event for userID=%s", payload.UserID)
 			err := svc.Delete(context.Background(), payload.UserID)
