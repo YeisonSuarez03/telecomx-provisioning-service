@@ -22,6 +22,16 @@ type CustomerPayload struct {
 	IsActive    bool   `json:"isActive"`
 }
 
+// toJSON returns a compact JSON representation of any value for logging.
+// Falls back to an error string if marshaling fails.
+func toJSON(v interface{}) string {
+    b, err := json.Marshal(v)
+    if err != nil {
+        return "<json_error: " + err.Error() + ">"
+    }
+    return string(b)
+}
+
 func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topic, group, client string) error {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: brokers,
@@ -42,8 +52,10 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 			return err
 		}
 
-		// Log raw message metadata for observability
-		log.Printf("[Kafka] Received message partition=%d offset=%d key=%q", msg.Partition, msg.Offset, string(msg.Key))
+        // Log raw message metadata for observability
+        log.Printf("[Kafka] Received message partition=%d offset=%d key=%q", msg.Partition, msg.Offset, string(msg.Key))
+        log.Printf("[Kafka] MESSAGE=%s", toJSON(msg))
+
 
 		var event CustomerEvent
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
@@ -51,11 +63,15 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 			continue
 		}
 
-		// Log parsed event type and a trimmed payload preview
-		log.Printf("[Kafka] Parsed event type=%s payload_len=%d complete=%v", event.Type, len(event.Payload), event)
+        // Log parsed event type and a trimmed payload preview
+        log.Printf("[Kafka] Parsed event type=%s payload_len=%d", event.Type, len(event.Payload))
+        // Log full event JSON for debugging
+        log.Printf("[Kafka] Event JSON=%s", toJSON(event))
 
 		var payload CustomerPayload
 		_ = json.Unmarshal(event.Payload, &payload)
+        // Log full payload JSON for debugging
+        log.Printf("[Kafka] Payload JSON=%s", toJSON(payload))
 
 		switch event.Type {
 		case "Customer.Created":
