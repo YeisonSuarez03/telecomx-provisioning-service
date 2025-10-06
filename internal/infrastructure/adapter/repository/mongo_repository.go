@@ -27,12 +27,12 @@ func (r *MongoRepository) Create(ctx context.Context, p *model.Provisioning) err
 func (r *MongoRepository) UpdateStatus(ctx context.Context, userID, status string) error {
 	filter := bson.M{"userId": userID}
 	update := bson.M{"$set": bson.M{"status": status, "lastUpdatedAt": time.Now().Format(time.RFC3339)}}
-	_, err := r.Collection.UpdateOne(ctx, filter, update)
+	_, err := r.Collection.UpdateMany(ctx, filter, update)
 	return err
 }
 
 func (r *MongoRepository) DeleteByUserID(ctx context.Context, userID string) error {
-	_, err := r.Collection.DeleteOne(ctx, bson.M{"userId": userID})
+	_, err := r.Collection.DeleteMany(ctx, bson.M{"userId": userID})
 	return err
 }
 
