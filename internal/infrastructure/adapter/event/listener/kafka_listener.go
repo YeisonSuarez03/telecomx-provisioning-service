@@ -41,11 +41,17 @@ func StartKafkaListener(svc *service.ProvisioningService, brokers []string, topi
 			return err
 		}
 
+		// Log raw message metadata for observability
+		log.Printf("[Kafka] Received message partition=%d offset=%d key=%q", msg.Partition, msg.Offset, string(msg.Key))
+
 		var event CustomerEvent
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Println("Invalid event:", err)
 			continue
 		}
+
+		// Log parsed event type and a trimmed payload preview
+		log.Printf("[Kafka] Parsed event type=%s payload_len=%d", event.Type, len(event.Payload))
 
 		var payload CustomerPayload
 		_ = json.Unmarshal(event.Payload, &payload)
